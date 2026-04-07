@@ -57,6 +57,82 @@ func TestCLICommandsSmoke(t *testing.T) {
 	}
 }
 
+func TestCLIAllowsSharedFlagsAfterCommand(t *testing.T) {
+	fixtureDir := testFixtureDir(t)
+	outDir := t.TempDir()
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	exitCode := Run(
+		[]string{"whoami", "--debug", "--output", "json", "--outdir", outDir},
+		stdout,
+		stderr,
+		[]string{"HARRIEROPS_KUBE_FIXTURE_DIR=" + fixtureDir},
+	)
+
+	if exitCode != 0 {
+		t.Fatalf("exit code = %d, stderr = %s", exitCode, stderr.String())
+	}
+
+	payload := decodeJSONMap(t, stdout.Bytes())
+	metadata := requireMap(t, payload["metadata"])
+	if metadata["command"] != "whoami" {
+		t.Fatalf("metadata.command = %v, want whoami", metadata["command"])
+	}
+
+	lootPath := filepath.Join(outDir, "loot", "whoami.json")
+	if _, err := os.Stat(lootPath); err != nil {
+		t.Fatalf("expected artifact %s: %v", lootPath, err)
+	}
+}
+
+func TestCLIAllowsSharedFlagsOnEitherSideOfCommand(t *testing.T) {
+	fixtureDir := testFixtureDir(t)
+	outDir := t.TempDir()
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	exitCode := Run(
+		[]string{"--context", "lab-cluster", "inventory", "--output", "json", "--outdir", outDir},
+		stdout,
+		stderr,
+		[]string{"HARRIEROPS_KUBE_FIXTURE_DIR=" + fixtureDir},
+	)
+
+	if exitCode != 0 {
+		t.Fatalf("exit code = %d, stderr = %s", exitCode, stderr.String())
+	}
+
+	payload := decodeJSONMap(t, stdout.Bytes())
+	metadata := requireMap(t, payload["metadata"])
+	if metadata["command"] != "inventory" {
+		t.Fatalf("metadata.command = %v, want inventory", metadata["command"])
+	}
+	if metadata["context_name"] != "lab-cluster" {
+		t.Fatalf("metadata.context_name = %v, want lab-cluster", metadata["context_name"])
+	}
+}
+
+func TestCLIStillRejectsTrailingArgsWhenSharedFlagsMoveAround(t *testing.T) {
+	fixtureDir := testFixtureDir(t)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	exitCode := Run(
+		[]string{"whoami", "--output", "json", "extra"},
+		stdout,
+		stderr,
+		[]string{"HARRIEROPS_KUBE_FIXTURE_DIR=" + fixtureDir},
+	)
+
+	if exitCode != 2 {
+		t.Fatalf("exit code = %d, want 2", exitCode)
+	}
+	if !strings.Contains(stderr.String(), `unexpected arguments after command "whoami": extra`) {
+		t.Fatalf("stderr = %q, want trailing-args guidance", stderr.String())
+	}
+}
+
 func TestPlannedPhaseOneCommandsReturnHelpfulError(t *testing.T) {
 	fixtureDir := testFixtureDir(t)
 	for _, command := range []string{"permissions", "secrets", "privesc"} {

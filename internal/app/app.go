@@ -96,7 +96,7 @@ func parseRootOptions(args []string, stderr io.Writer, env []string) (Options, [
 	flags.StringVar(&options.OutDir, "outdir", ".", "Output directory")
 	flags.BoolVar(&options.Debug, "debug", false, "Enable verbose errors")
 
-	if err := flags.Parse(args); err != nil {
+	if err := flags.Parse(normalizeRootArgs(args)); err != nil {
 		return Options{}, nil, err
 	}
 
@@ -109,6 +109,75 @@ func parseRootOptions(args []string, stderr io.Writer, env []string) (Options, [
 	}
 
 	return options, flags.Args(), nil
+}
+
+func normalizeRootArgs(args []string) []string {
+	commandIndex := firstPositionalIndex(args)
+	if commandIndex == -1 {
+		return args
+	}
+
+	reordered := make([]string, 0, len(args))
+	reordered = append(reordered, args[:commandIndex]...)
+
+	trailingPositionals := make([]string, 0, len(args)-commandIndex-1)
+	for index := commandIndex + 1; index < len(args); {
+		token := args[index]
+		if isFlagToken(token) {
+			reordered = append(reordered, token)
+			if rootFlagConsumesNextArg(token) && index+1 < len(args) {
+				reordered = append(reordered, args[index+1])
+				index += 2
+				continue
+			}
+			index++
+			continue
+		}
+
+		trailingPositionals = append(trailingPositionals, token)
+		index++
+	}
+
+	reordered = append(reordered, args[commandIndex])
+	reordered = append(reordered, trailingPositionals...)
+	return reordered
+}
+
+func firstPositionalIndex(args []string) int {
+	for index := 0; index < len(args); {
+		token := args[index]
+		if !isFlagToken(token) {
+			return index
+		}
+		if rootFlagConsumesNextArg(token) && index+1 < len(args) {
+			index += 2
+			continue
+		}
+		index++
+	}
+	return -1
+}
+
+func isFlagToken(token string) bool {
+	return strings.HasPrefix(token, "-") && token != "-"
+}
+
+func rootFlagConsumesNextArg(token string) bool {
+	name, _, hasInlineValue := strings.Cut(trimFlagPrefix(token), "=")
+	if hasInlineValue {
+		return false
+	}
+
+	switch name {
+	case "context", "namespace", "output", "outdir":
+		return true
+	default:
+		return false
+	}
+}
+
+func trimFlagPrefix(token string) string {
+	return strings.TrimLeft(token, "-")
 }
 
 func runSingleCommand(options Options, command string, stdout io.Writer, stderr io.Writer) int {
