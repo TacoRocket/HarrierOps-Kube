@@ -1,0 +1,158 @@
+{
+  "findings": [
+    {
+      "description": "Workload 'default/fox-admin' runs one or more containers in privileged mode.",
+      "id": "workload-privileged-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "high",
+      "title": "Privileged workload detected"
+    },
+    {
+      "description": "Workload 'default/fox-admin' allows privilege escalation.",
+      "id": "workload-allow-priv-esc-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "high",
+      "title": "Privilege escalation is allowed"
+    },
+    {
+      "description": "Workload 'default/fox-admin' mounts host paths (/, /var/run/docker.sock).",
+      "id": "workload-hostpath-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "high",
+      "title": "HostPath mount detected"
+    },
+    {
+      "description": "Workload 'default/fox-admin' explicitly sets a root UID.",
+      "id": "workload-root-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "medium",
+      "title": "Workload explicitly runs as root"
+    },
+    {
+      "description": "Workload 'default/fox-admin' adds Linux capabilities (SYS_ADMIN).",
+      "id": "workload-capabilities-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "medium",
+      "title": "Linux capabilities added to workload"
+    },
+    {
+      "description": "Workload 'default/fox-admin' mounts the Docker socket.",
+      "id": "workload-docker-socket-pod:default:fox-admin",
+      "related_ids": [
+        "pod:default:fox-admin"
+      ],
+      "severity": "high",
+      "title": "Docker socket mounted into workload"
+    },
+    {
+      "description": "Workload 'build/node-debug' shares one or more host namespaces.",
+      "id": "workload-host-namespaces-pod:build:node-debug",
+      "related_ids": [
+        "pod:build:node-debug"
+      ],
+      "severity": "high",
+      "title": "Workload uses host namespaces"
+    },
+    {
+      "description": "Workload 'build/node-debug' mounts host paths (/var/lib/kubelet).",
+      "id": "workload-hostpath-pod:build:node-debug",
+      "related_ids": [
+        "pod:build:node-debug"
+      ],
+      "severity": "high",
+      "title": "HostPath mount detected"
+    }
+  ],
+  "issues": [],
+  "metadata": {
+    "cluster_name": null,
+    "command": "workloads",
+    "context_name": "lab-cluster",
+    "docker_context": "default",
+    "generated_at": "<generated_at>",
+    "namespace": "default",
+    "schema_version": "1.0.0"
+  },
+  "workload_assets": [
+    {
+      "added_capabilities": [
+        "SYS_ADMIN"
+      ],
+      "allow_privilege_escalation": true,
+      "automount_service_account_token": true,
+      "docker_socket_mount": true,
+      "host_ipc": false,
+      "host_network": false,
+      "host_path_mounts": [
+        "/",
+        "/var/run/docker.sock"
+      ],
+      "host_pid": false,
+      "id": "pod:default:fox-admin",
+      "images": [
+        "ghcr.io/example/fox-admin:latest"
+      ],
+      "kind": "Pod",
+      "name": "fox-admin",
+      "namespace": "default",
+      "privileged": true,
+      "runs_as_root": true,
+      "seccomp_profile": null,
+      "service_account_name": "fox-admin"
+    },
+    {
+      "added_capabilities": [],
+      "allow_privilege_escalation": false,
+      "automount_service_account_token": false,
+      "docker_socket_mount": false,
+      "host_ipc": false,
+      "host_network": false,
+      "host_path_mounts": [],
+      "host_pid": false,
+      "id": "pod:storefront:web-5d4f6",
+      "images": [
+        "nginx@sha256:abc123"
+      ],
+      "kind": "Pod",
+      "name": "web-5d4f6",
+      "namespace": "storefront",
+      "privileged": false,
+      "runs_as_root": false,
+      "seccomp_profile": "RuntimeDefault",
+      "service_account_name": "web"
+    },
+    {
+      "added_capabilities": [],
+      "allow_privilege_escalation": false,
+      "automount_service_account_token": true,
+      "docker_socket_mount": false,
+      "host_ipc": true,
+      "host_network": true,
+      "host_path_mounts": [
+        "/var/lib/kubelet"
+      ],
+      "host_pid": true,
+      "id": "pod:build:node-debug",
+      "images": [
+        "alpine:3.19"
+      ],
+      "kind": "Pod",
+      "name": "node-debug",
+      "namespace": "build",
+      "privileged": false,
+      "runs_as_root": false,
+      "seccomp_profile": null,
+      "service_account_name": "default"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "exposure_assets": [
+    {
+      "id": "ingress:storefront:web-ing",
+      "namespace": "storefront",
+      "name": "web-ing",
+      "asset_type": "Ingress",
+      "exposure_type": "Ingress",
+      "public": true,
+      "external_targets": ["app.example.com"],
+      "related_workloads": []
+    },
+    {
+      "id": "service:storefront:web-svc",
+      "namespace": "storefront",
+      "name": "web-svc",
+      "asset_type": "Service",
+      "exposure_type": "LoadBalancer",
+      "public": true,
+      "external_targets": ["34.120.0.15"],
+      "related_workloads": []
+    },
+    {
+      "id": "service:kube-system:metrics",
+      "namespace": "kube-system",
+      "name": "metrics",
+      "asset_type": "Service",
+      "exposure_type": "NodePort",
+      "public": true,
+      "external_targets": ["nodePort:30080"],
+      "related_workloads": []
+    },
+    {
+      "id": "pod-hostnetwork:build:ci-runner",
+      "namespace": "build",
+      "name": "ci-runner",
+      "asset_type": "Pod",
+      "exposure_type": "HostNetwork",
+      "public": false,
+      "external_targets": [],
+      "related_workloads": ["ci-runner"]
+    },
+    {
+      "id": "pod-hostport:build:docker-builder",
+      "namespace": "build",
+      "name": "docker-builder",
+      "asset_type": "Pod",
+      "exposure_type": "HostPort",
+      "public": false,
+      "external_targets": ["hostPort:2375"],
+      "related_workloads": ["docker-builder"]
+    }
+  ],
+  "issues": []
+}
