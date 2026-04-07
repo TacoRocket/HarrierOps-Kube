@@ -1,0 +1,4 @@
+{
+  "model": "WhoAmIOutput",
+  "top_level_fields": ["metadata", "kube_context", "docker", "issues"]
+}

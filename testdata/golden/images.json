@@ -1,0 +1,104 @@
+{
+  "findings": [
+    {
+      "description": "Image 'ghcr.io/example/fox-admin:latest' is referenced with the mutable 'latest' tag.",
+      "id": "image-latest-pod-image:default:fox-admin:main",
+      "related_ids": [
+        "pod-image:default:fox-admin:main"
+      ],
+      "severity": "medium",
+      "title": "Image uses mutable latest tag"
+    },
+    {
+      "description": "Image 'ghcr.io/example/fox-admin:latest' is referenced without a content digest.",
+      "id": "image-unpinned-pod-image:default:fox-admin:main",
+      "related_ids": [
+        "pod-image:default:fox-admin:main"
+      ],
+      "severity": "low",
+      "title": "Image is not pinned by digest"
+    },
+    {
+      "description": "Image 'alpine:3.19' is referenced without a content digest.",
+      "id": "image-unpinned-pod-image:build:ci-runner:runner",
+      "related_ids": [
+        "pod-image:build:ci-runner:runner"
+      ],
+      "severity": "low",
+      "title": "Image is not pinned by digest"
+    },
+    {
+      "description": "Image 'local/tooling:latest' is referenced with the mutable 'latest' tag.",
+      "id": "image-latest-docker-image:sha256:feedface",
+      "related_ids": [
+        "docker-image:sha256:feedface"
+      ],
+      "severity": "medium",
+      "title": "Image uses mutable latest tag"
+    }
+  ],
+  "image_assets": [
+    {
+      "digest": null,
+      "docker_local": false,
+      "id": "pod-image:default:fox-admin:main",
+      "image": "ghcr.io/example/fox-admin:latest",
+      "namespace": "default",
+      "pinned_by_digest": false,
+      "pull_policy": "Always",
+      "source_kind": "Pod",
+      "source_name": "fox-admin",
+      "tag": "latest",
+      "uses_latest": true
+    },
+    {
+      "digest": "sha256:abc123",
+      "docker_local": false,
+      "id": "pod-image:storefront:web-5d4f6:web",
+      "image": "nginx@sha256:abc123",
+      "namespace": "storefront",
+      "pinned_by_digest": true,
+      "pull_policy": "IfNotPresent",
+      "source_kind": "Pod",
+      "source_name": "web-5d4f6",
+      "tag": null,
+      "uses_latest": false
+    },
+    {
+      "digest": null,
+      "docker_local": false,
+      "id": "pod-image:build:ci-runner:runner",
+      "image": "alpine:3.19",
+      "namespace": "build",
+      "pinned_by_digest": false,
+      "pull_policy": "IfNotPresent",
+      "source_kind": "Pod",
+      "source_name": "ci-runner",
+      "tag": "3.19",
+      "uses_latest": false
+    },
+    {
+      "digest": null,
+      "docker_local": true,
+      "id": "docker-image:sha256:feedface",
+      "image": "local/tooling:latest",
+      "namespace": null,
+      "pinned_by_digest": false,
+      "pull_policy": null,
+      "source_kind": "Docker",
+      "source_name": "sha256:feedface",
+      "tag": "latest",
+      "uses_latest": true
+    }
+  ],
+  "issues": [],
+  "metadata": {
+    "cluster_name": null,
+    "command": "images",
+    "context_name": "lab-cluster",
+    "docker_context": "default",
+    "generated_at": "<generated_at>",
+    "namespace": "default",
+    "schema_version": "1.0.0"
+  }
+}

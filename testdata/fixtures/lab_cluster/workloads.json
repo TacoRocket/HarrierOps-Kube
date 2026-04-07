@@ -1,0 +1,62 @@
+{
+  "workload_assets": [
+    {
+      "id": "pod:default:fox-admin",
+      "namespace": "default",
+      "name": "fox-admin",
+      "kind": "Pod",
+      "service_account_name": "fox-admin",
+      "images": ["ghcr.io/example/fox-admin:latest"],
+      "privileged": true,
+      "runs_as_root": true,
+      "allow_privilege_escalation": true,
+      "host_network": false,
+      "host_pid": false,
+      "host_ipc": false,
+      "host_path_mounts": ["/", "/var/run/docker.sock"],
+      "added_capabilities": ["SYS_ADMIN"],
+      "seccomp_profile": null,
+      "automount_service_account_token": true,
+      "docker_socket_mount": true
+    },
+    {
+      "id": "pod:storefront:web-5d4f6",
+      "namespace": "storefront",
+      "name": "web-5d4f6",
+      "kind": "Pod",
+      "service_account_name": "web",
+      "images": ["nginx@sha256:abc123"],
+      "privileged": false,
+      "runs_as_root": false,
+      "allow_privilege_escalation": false,
+      "host_network": false,
+      "host_pid": false,
+      "host_ipc": false,
+      "host_path_mounts": [],
+      "added_capabilities": [],
+      "seccomp_profile": "RuntimeDefault",
+      "automount_service_account_token": false,
+      "docker_socket_mount": false
+    },
+    {
+      "id": "pod:build:node-debug",
+      "namespace": "build",
+      "name": "node-debug",
+      "kind": "Pod",
+      "service_account_name": "default",
+      "images": ["alpine:3.19"],
+      "privileged": false,
+      "runs_as_root": false,
+      "allow_privilege_escalation": false,
+      "host_network": true,
+      "host_pid": true,
+      "host_ipc": true,
+      "host_path_mounts": ["/var/lib/kubelet"],
+      "added_capabilities": [],
+      "seccomp_profile": null,
+      "automount_service_account_token": true,
+      "docker_socket_mount": false
+    }
+  ],
+  "issues": []
+}

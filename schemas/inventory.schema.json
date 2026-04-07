@@ -1,0 +1,4 @@
+{
+  "model": "InventoryOutput",
+  "top_level_fields": ["metadata", "kubernetes_counts", "docker_counts", "issues"]
+}

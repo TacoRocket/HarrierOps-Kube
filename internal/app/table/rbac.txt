@@ -1,0 +1,4 @@
+binding_kind        binding_name                       id                                                                                      namespace   role_kind    role_name      subject_kind    subject_name         subject_namespace
+ClusterRoleBinding  harrierops-kube-lab-cluster-admin  ClusterRoleBinding:_cluster:harrierops-kube-lab-cluster-admin:ServiceAccount:fox-admin              ClusterRole  cluster-admin  ServiceAccount  fox-admin            default
+RoleBinding         web-edit                           RoleBinding:storefront:web-edit:ServiceAccount:web                                      storefront  ClusterRole  edit           ServiceAccount  web                  storefront
+RoleBinding         view-only                          RoleBinding:storefront:view-only:User:analyst@example.com                               storefront  Role         view           User            analyst@example.com  

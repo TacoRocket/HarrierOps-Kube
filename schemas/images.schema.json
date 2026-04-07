@@ -1,0 +1,4 @@
+{
+  "model": "ImagesOutput",
+  "top_level_fields": ["metadata", "image_assets", "findings", "issues"]
+}

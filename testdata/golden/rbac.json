@@ -1,0 +1,47 @@
+{
+  "issues": [],
+  "metadata": {
+    "cluster_name": null,
+    "command": "rbac",
+    "context_name": "lab-cluster",
+    "docker_context": "default",
+    "generated_at": "<generated_at>",
+    "namespace": "default",
+    "schema_version": "1.0.0"
+  },
+  "role_grants": [
+    {
+      "binding_kind": "ClusterRoleBinding",
+      "binding_name": "harrierops-kube-lab-cluster-admin",
+      "id": "ClusterRoleBinding:_cluster:harrierops-kube-lab-cluster-admin:ServiceAccount:fox-admin",
+      "namespace": null,
+      "role_kind": "ClusterRole",
+      "role_name": "cluster-admin",
+      "subject_kind": "ServiceAccount",
+      "subject_name": "fox-admin",
+      "subject_namespace": "default"
+    },
+    {
+      "binding_kind": "RoleBinding",
+      "binding_name": "web-edit",
+      "id": "RoleBinding:storefront:web-edit:ServiceAccount:web",
+      "namespace": "storefront",
+      "role_kind": "ClusterRole",
+      "role_name": "edit",
+      "subject_kind": "ServiceAccount",
+      "subject_name": "web",
+      "subject_namespace": "storefront"
+    },
+    {
+      "binding_kind": "RoleBinding",
+      "binding_name": "view-only",
+      "id": "RoleBinding:storefront:view-only:User:analyst@example.com",
+      "namespace": "storefront",
+      "role_kind": "Role",
+      "role_name": "view",
+      "subject_kind": "User",
+      "subject_name": "analyst@example.com",
+      "subject_namespace": null
+    }
+  ]
+}

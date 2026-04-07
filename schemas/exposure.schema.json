@@ -1,0 +1,4 @@
+{
+  "model": "ExposureOutput",
+  "top_level_fields": ["metadata", "exposure_assets", "findings", "issues"]
+}

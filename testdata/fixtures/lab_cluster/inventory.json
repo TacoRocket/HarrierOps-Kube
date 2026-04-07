@@ -1,0 +1,21 @@
+{
+  "kubernetes_counts": {
+    "namespaces": 4,
+    "nodes": 3,
+    "pods": 5,
+    "deployments": 2,
+    "daemonsets": 1,
+    "statefulsets": 1,
+    "services": 3,
+    "ingresses": 1,
+    "secrets": 6,
+    "configmaps": 4
+  },
+  "docker_counts": {
+    "containers": 3,
+    "images": 4,
+    "networks": 2,
+    "volumes": 1
+  },
+  "issues": []
+}

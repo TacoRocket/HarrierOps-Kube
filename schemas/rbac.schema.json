@@ -1,0 +1,4 @@
+{
+  "model": "RbacOutput",
+  "top_level_fields": ["metadata", "role_grants", "issues"]
+}

@@ -1,0 +1,57 @@
+{
+  "image_assets": [
+    {
+      "id": "pod-image:default:fox-admin:main",
+      "source_kind": "Pod",
+      "source_name": "fox-admin",
+      "namespace": "default",
+      "image": "ghcr.io/example/fox-admin:latest",
+      "tag": "latest",
+      "digest": null,
+      "pinned_by_digest": false,
+      "uses_latest": true,
+      "pull_policy": "Always",
+      "docker_local": false
+    },
+    {
+      "id": "pod-image:storefront:web-5d4f6:web",
+      "source_kind": "Pod",
+      "source_name": "web-5d4f6",
+      "namespace": "storefront",
+      "image": "nginx@sha256:abc123",
+      "tag": null,
+      "digest": "sha256:abc123",
+      "pinned_by_digest": true,
+      "uses_latest": false,
+      "pull_policy": "IfNotPresent",
+      "docker_local": false
+    },
+    {
+      "id": "pod-image:build:ci-runner:runner",
+      "source_kind": "Pod",
+      "source_name": "ci-runner",
+      "namespace": "build",
+      "image": "alpine:3.19",
+      "tag": "3.19",
+      "digest": null,
+      "pinned_by_digest": false,
+      "uses_latest": false,
+      "pull_policy": "IfNotPresent",
+      "docker_local": false
+    },
+    {
+      "id": "docker-image:sha256:feedface",
+      "source_kind": "Docker",
+      "source_name": "sha256:feedface",
+      "namespace": null,
+      "image": "local/tooling:latest",
+      "tag": "latest",
+      "digest": null,
+      "pinned_by_digest": false,
+      "uses_latest": true,
+      "pull_policy": null,
+      "docker_local": true
+    }
+  ],
+  "issues": []
+}
