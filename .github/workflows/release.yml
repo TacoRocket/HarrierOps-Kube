@@ -114,6 +114,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
@@ -126,9 +131,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          cd dist
-          shasum -a 256 * > SHA256SUMS
-          assets=(*)
+          shasum -a 256 dist/* > dist/SHA256SUMS
+          assets=(dist/*)
           if [ "${#assets[@]}" -eq 0 ]; then
             echo "No release assets found in dist/" >&2
             exit 1
