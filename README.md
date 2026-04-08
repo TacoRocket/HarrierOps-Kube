@@ -36,6 +36,7 @@ Release artifacts include macOS binaries for both Apple Silicon (`darwin-arm64`)
 ## CLI Invocation
 
 Shared flags include `--context`, `--namespace`, `--output`, `--outdir`, and `--debug`.
+They can appear before or after the command.
 
 ```bash
 harrierops-kube [global options] <command>
@@ -46,6 +47,7 @@ For example:
 ```bash
 harrierops-kube --output json --outdir ./harrierops-kube-demo whoami
 harrierops-kube --context prod-cluster --namespace payments inventory
+harrierops-kube whoami --output json --outdir ./harrierops-kube-demo
 ```
 
 ## Kubernetes Access Assumptions
