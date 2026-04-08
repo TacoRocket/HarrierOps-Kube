@@ -85,6 +85,26 @@
   },
   "workload_assets": [
     {
+      "id": "pod:storefront:web-5d4f6",
+      "identity_summary": "runs as storefront/web (can change workloads)",
+      "images": [
+        "nginx@sha256:abc123"
+      ],
+      "kind": "Pod",
+      "name": "web-5d4f6",
+      "namespace": "storefront",
+      "priority": "high",
+      "public_exposure": true,
+      "related_exposures": [
+        "Ingress app.example.com",
+        "LoadBalancer 34.120.0.15"
+      ],
+      "risk_signals": [],
+      "service_account_name": "web",
+      "service_account_power": "can change workloads",
+      "why_care": "Workload rises because it has a public-looking exposure path, can change workloads."
+    },
+    {
       "id": "pod:default:fox-admin",
       "identity_summary": "runs as default/fox-admin (has cluster-wide admin-like access)",
       "images": [
@@ -127,23 +147,6 @@
       "service_account_name": "default",
       "service_account_power": "",
       "why_care": "Workload rises because it uses host namespaces."
-    },
-    {
-      "id": "pod:storefront:web-5d4f6",
-      "identity_summary": "runs as storefront/web (can change workloads)",
-      "images": [
-        "nginx@sha256:abc123"
-      ],
-      "kind": "Pod",
-      "name": "web-5d4f6",
-      "namespace": "storefront",
-      "priority": "medium",
-      "public_exposure": false,
-      "related_exposures": [],
-      "risk_signals": [],
-      "service_account_name": "web",
-      "service_account_power": "can change workloads",
-      "why_care": "Workload rises because it can change workloads."
     }
   ]
 }

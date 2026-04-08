@@ -92,6 +92,11 @@ func enrichExposurePaths(
 	serviceAccountData model.ServiceAccountsData,
 	rbacData model.RBACData,
 ) []model.ExposurePath {
+	type rankedExposurePath struct {
+		path model.ExposurePath
+		attr exposureAttribution
+	}
+
 	serviceAccountPaths := enrichServiceAccountPaths(
 		serviceAccountData.ServiceAccounts,
 		workloadData,
@@ -112,49 +117,62 @@ func enrichExposurePaths(
 		workloadsByNamespace[workload.Namespace] = append(workloadsByNamespace[workload.Namespace], workload)
 	}
 
-	rows := make([]model.ExposurePath, 0, len(exposureData.ExposureAssets))
+	rows := make([]rankedExposurePath, 0, len(exposureData.ExposureAssets))
 	for _, exposure := range exposureData.ExposureAssets {
 		attr := attributeExposure(exposure, workloadsByKey, workloadsByNamespace, serviceAccountByKey)
 		score := exposurePathScore(exposure, attr)
-		rows = append(rows, model.ExposurePath{
-			ID:                exposure.ID,
-			AssetType:         exposure.AssetType,
-			ExposureType:      exposure.ExposureType,
-			Name:              exposure.Name,
-			Namespace:         exposure.Namespace,
-			Public:            exposure.Public,
-			ExternalTargets:   exposure.ExternalTargets,
-			RelatedWorkloads:  attr.Workloads,
-			AttributionStatus: attr.Status,
-			IdentitySummary:   attr.IdentitySummary,
-			BackendSignal:     attr.BackendSignal,
-			Priority:          semanticPriority(score),
-			WhyCare:           deriveExposureWhyCare(exposure, attr),
+		rows = append(rows, rankedExposurePath{
+			path: model.ExposurePath{
+				ID:                exposure.ID,
+				AssetType:         exposure.AssetType,
+				ExposureType:      exposure.ExposureType,
+				Name:              exposure.Name,
+				Namespace:         exposure.Namespace,
+				Public:            exposure.Public,
+				ExternalTargets:   exposure.ExternalTargets,
+				RelatedWorkloads:  attr.Workloads,
+				AttributionStatus: attr.Status,
+				IdentitySummary:   attr.IdentitySummary,
+				BackendSignal:     attr.BackendSignal,
+				Priority:          semanticPriority(score),
+				WhyCare:           deriveExposureWhyCare(exposure, attr),
+			},
+			attr: attr,
 		})
 	}
 
 	sort.SliceStable(rows, func(i, j int) bool {
-		leftPriority := priorityOrder(rows[i].Priority)
-		rightPriority := priorityOrder(rows[j].Priority)
+		leftPriority := priorityOrder(rows[i].path.Priority)
+		rightPriority := priorityOrder(rows[j].path.Priority)
 		if leftPriority != rightPriority {
 			return leftPriority < rightPriority
 		}
-		if rows[i].Public != rows[j].Public {
-			return rows[i].Public
+		if rows[i].path.Public != rows[j].path.Public {
+			return rows[i].path.Public
 		}
-		if attributionOrder(rows[i].AttributionStatus) != attributionOrder(rows[j].AttributionStatus) {
-			return attributionOrder(rows[i].AttributionStatus) < attributionOrder(rows[j].AttributionStatus)
+		if attributionOrder(rows[i].path.AttributionStatus) != attributionOrder(rows[j].path.AttributionStatus) {
+			return attributionOrder(rows[i].path.AttributionStatus) < attributionOrder(rows[j].path.AttributionStatus)
 		}
-		if exposureFamilyOrder(rows[i].ExposureType) != exposureFamilyOrder(rows[j].ExposureType) {
-			return exposureFamilyOrder(rows[i].ExposureType) < exposureFamilyOrder(rows[j].ExposureType)
+		if exposureConsequenceOrder(rows[i].attr) != exposureConsequenceOrder(rows[j].attr) {
+			return exposureConsequenceOrder(rows[i].attr) > exposureConsequenceOrder(rows[j].attr)
 		}
-		if rows[i].Namespace != rows[j].Namespace {
-			return rows[i].Namespace < rows[j].Namespace
+		if exposureTargetClarity(rows[i].path.ExternalTargets) != exposureTargetClarity(rows[j].path.ExternalTargets) {
+			return exposureTargetClarity(rows[i].path.ExternalTargets) > exposureTargetClarity(rows[j].path.ExternalTargets)
 		}
-		return rows[i].Name < rows[j].Name
+		if exposureFamilyOrder(rows[i].path.ExposureType) != exposureFamilyOrder(rows[j].path.ExposureType) {
+			return exposureFamilyOrder(rows[i].path.ExposureType) < exposureFamilyOrder(rows[j].path.ExposureType)
+		}
+		if rows[i].path.Namespace != rows[j].path.Namespace {
+			return rows[i].path.Namespace < rows[j].path.Namespace
+		}
+		return rows[i].path.Name < rows[j].path.Name
 	})
 
-	return rows
+	ordered := make([]model.ExposurePath, 0, len(rows))
+	for _, row := range rows {
+		ordered = append(ordered, row.path)
+	}
+	return ordered
 }
 
 type exposureAttribution struct {
@@ -164,6 +182,7 @@ type exposureAttribution struct {
 	BackendSignal   string
 	PowerSummary    string
 	RiskyBackend    bool
+	CentralBackend  bool
 	ManagementLike  bool
 }
 
@@ -180,26 +199,17 @@ func attributeExposure(
 		ManagementLike: looksManagementLike(exposure),
 	}
 
+	matchedWorkloads := matchExposureWorkloads(exposure, workloadsByKey, workloadsByNamespace)
 	if len(exposure.RelatedWorkloads) > 0 {
-		labels := make([]string, 0, len(exposure.RelatedWorkloads))
-		matched := []model.Workload{}
-		for _, rawName := range exposure.RelatedWorkloads {
-			label := relatedWorkloadKey(exposure.Namespace, rawName)
-			labels = append(labels, label)
-			if workload, ok := workloadsByKey[label]; ok {
-				matched = append(matched, workload)
-			}
-		}
-		sort.Strings(labels)
-		attr.Workloads = labels
-		if len(matched) > 0 {
-			workload := strongestExposureBackend(matched, serviceAccountByKey)
+		attr.Workloads = matchedWorkloads.Labels
+		if len(matchedWorkloads.Matched) > 0 {
+			workload := strongestExposureBackend(matchedWorkloads.Matched, serviceAccountByKey)
 			attr.Status = "direct"
-			attr.IdentitySummary, attr.PowerSummary, attr.RiskyBackend = summarizeBackendWorkload(workload, serviceAccountByKey)
-			if len(matched) == 1 {
+			attr.IdentitySummary, attr.PowerSummary, attr.RiskyBackend, attr.CentralBackend = summarizeBackendWorkload(workload, serviceAccountByKey)
+			if len(matchedWorkloads.Matched) == 1 {
 				attr.BackendSignal = "backs " + workload.Namespace + "/" + workload.Name
 			} else {
-				attr.BackendSignal = fmt.Sprintf("backs %d visible workloads; strongest visible backend is %s/%s", len(matched), workload.Namespace, workload.Name)
+				attr.BackendSignal = fmt.Sprintf("backs %d visible workloads; strongest visible backend is %s/%s", len(matchedWorkloads.Matched), workload.Namespace, workload.Name)
 			}
 			return attr
 		}
@@ -208,12 +218,11 @@ func attributeExposure(
 		return attr
 	}
 
-	candidates := heuristicExposureMatches(exposure, workloadsByNamespace[exposure.Namespace])
-	if len(candidates) == 1 {
-		workload := candidates[0]
+	if matchedWorkloads.Heuristic && len(matchedWorkloads.Matched) == 1 {
+		workload := matchedWorkloads.Matched[0]
 		attr.Workloads = []string{workload.Namespace + "/" + workload.Name}
 		attr.Status = "heuristic"
-		attr.IdentitySummary, attr.PowerSummary, attr.RiskyBackend = summarizeBackendWorkload(workload, serviceAccountByKey)
+		attr.IdentitySummary, attr.PowerSummary, attr.RiskyBackend, attr.CentralBackend = summarizeBackendWorkload(workload, serviceAccountByKey)
 		attr.BackendSignal = "appears to front " + workload.Namespace + "/" + workload.Name
 		return attr
 	}
@@ -225,13 +234,13 @@ func attributeExposure(
 	return attr
 }
 
-func summarizeBackendWorkload(workload model.Workload, serviceAccountByKey map[string]model.ServiceAccountPath) (string, string, bool) {
+func summarizeBackendWorkload(workload model.Workload, serviceAccountByKey map[string]model.ServiceAccountPath) (string, string, bool, bool) {
 	serviceAccountPath := serviceAccountByKey[serviceAccountKey(workload.Namespace, workload.ServiceAccountName)]
 	identitySummary := fmt.Sprintf("backend runs as %s/%s", workload.Namespace, workload.ServiceAccountName)
 	if serviceAccountPath.PowerSummary != "" {
 		identitySummary += " (" + serviceAccountPath.PowerSummary + ")"
 	}
-	return identitySummary, serviceAccountPath.PowerSummary, isRiskyWorkload(workload)
+	return identitySummary, serviceAccountPath.PowerSummary, isRiskyWorkload(workload), workloadLooksOperationallyCentral(workload)
 }
 
 func strongestExposureBackend(workloads []model.Workload, serviceAccountByKey map[string]model.ServiceAccountPath) model.Workload {
@@ -266,6 +275,9 @@ func exposureBackendStrength(workload model.Workload, serviceAccountPath model.S
 	}
 	if isRiskyWorkload(workload) {
 		score += 20
+	}
+	if workloadLooksOperationallyCentral(workload) {
+		score += 12
 	}
 	if workload.ServiceAccountName != "" && workload.ServiceAccountName != "default" {
 		score += 5
@@ -382,15 +394,54 @@ func deriveExposureWhyCare(exposure model.Exposure, attr exposureAttribution) st
 		reasons = append(reasons, attr.BackendSignal)
 		reasons = append(reasons, "backend attribution is heuristic")
 	case "visibility blocked":
-		reasons = append(reasons, "backend name is visible but detail is blocked")
+		reasons = append(reasons, "backend detail is not visible from current credentials")
 	}
 	if attr.PowerSummary != "" {
 		reasons = append(reasons, attr.PowerSummary)
+	}
+	if attr.CentralBackend {
+		reasons = append(reasons, "backs an operationally central workload")
 	}
 	if attr.ManagementLike && len(attr.Workloads) > 0 {
 		reasons = append(reasons, "looks management-facing")
 	}
 	return fmt.Sprintf("Exposure rises because it %s.", strings.Join(reasons, ", "))
+}
+
+func exposureConsequenceOrder(attr exposureAttribution) int {
+	score := 0
+	if attr.PowerSummary != "" {
+		score += 4
+	}
+	if attr.RiskyBackend {
+		score += 2
+	}
+	if attr.CentralBackend {
+		score += 2
+	}
+	if len(attr.Workloads) > 0 {
+		score += 1
+	}
+	if attr.ManagementLike {
+		score += 1
+	}
+	return score
+}
+
+func exposureTargetClarity(targets []string) int {
+	best := 0
+	for _, target := range targets {
+		lowered := strings.ToLower(target)
+		switch {
+		case strings.HasPrefix(lowered, "nodeport:"), strings.HasPrefix(lowered, "hostport:"):
+			best = maxInt(best, 1)
+		case strings.Contains(lowered, "."):
+			best = maxInt(best, 3)
+		default:
+			best = maxInt(best, 2)
+		}
+	}
+	return best
 }
 
 func attributionOrder(status string) int {

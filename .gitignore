@@ -17,3 +17,9 @@ coverage.out
 /command-output/
 /run-summary.json
 AGENTS.md
+
+# Generated operator output samples under internal/app are disposable.
+/internal/app/csv/
+/internal/app/json/
+/internal/app/loot/
+/internal/app/table/

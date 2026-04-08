@@ -85,7 +85,6 @@ func Run(args []string, stdout io.Writer, stderr io.Writer, env []string) int {
 func parseRootOptions(args []string, stderr io.Writer, env []string) (Options, []string, error) {
 	options := Options{
 		Output: OutputTable,
-		OutDir: ".",
 	}
 
 	flags := flag.NewFlagSet("harrierops-kube", flag.ContinueOnError)
@@ -93,7 +92,7 @@ func parseRootOptions(args []string, stderr io.Writer, env []string) (Options, [
 	flags.StringVar(&options.Context, "context", "", "Kubernetes context name")
 	flags.StringVar(&options.Namespace, "namespace", "", "Kubernetes namespace")
 	flags.StringVar(&options.Output, "output", OutputTable, "Output format: table, json, csv")
-	flags.StringVar(&options.OutDir, "outdir", ".", "Output directory")
+	flags.StringVar(&options.OutDir, "outdir", "", "Output directory for emitted artifacts")
 	flags.BoolVar(&options.Debug, "debug", false, "Enable verbose errors")
 
 	if err := flags.Parse(normalizeRootArgs(args)); err != nil {
@@ -102,7 +101,9 @@ func parseRootOptions(args []string, stderr io.Writer, env []string) (Options, [
 
 	options.FixtureDir = resolveFixtureDir(env)
 	options.Output = strings.ToLower(options.Output)
-	options.OutDir = filepath.Clean(options.OutDir)
+	if options.OutDir != "" {
+		options.OutDir = filepath.Clean(options.OutDir)
+	}
 
 	if !validOutput(options.Output) {
 		return Options{}, nil, fmt.Errorf("invalid output %q; valid values: table, json, csv", options.Output)
@@ -187,9 +188,11 @@ func runSingleCommand(options Options, command string, stdout io.Writer, stderr 
 		return 2
 	}
 
-	if _, err := output.WriteArtifacts(command, payload, options.OutDir); err != nil {
-		writeError(stderr, err, options.Debug)
-		return 1
+	if options.OutDir != "" {
+		if _, err := output.WriteArtifacts(command, payload, options.OutDir); err != nil {
+			writeError(stderr, err, options.Debug)
+			return 1
+		}
 	}
 
 	rendered, err := output.Render(options.Output, command, payload)

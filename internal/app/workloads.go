@@ -103,10 +103,20 @@ func enrichWorkloadPaths(
 		serviceAccountPathByKey[serviceAccountKey(path.Namespace, path.Name)] = path
 	}
 
+	workloadsByKey := map[string]model.Workload{}
+	workloadsByNamespace := map[string][]model.Workload{}
+	workloadCentralityByID := map[string]bool{}
+	for _, workload := range workloadData.WorkloadAssets {
+		key := relatedWorkloadKey(workload.Namespace, workload.Name)
+		workloadsByKey[key] = workload
+		workloadsByNamespace[workload.Namespace] = append(workloadsByNamespace[workload.Namespace], workload)
+		workloadCentralityByID[workload.ID] = workloadLooksOperationallyCentral(workload)
+	}
+
 	exposuresByWorkload := map[string][]model.Exposure{}
 	for _, exposure := range exposureData.ExposureAssets {
-		for _, rawWorkloadName := range exposure.RelatedWorkloads {
-			key := relatedWorkloadKey(exposure.Namespace, rawWorkloadName)
+		matchedWorkloads := matchExposureWorkloads(exposure, workloadsByKey, workloadsByNamespace)
+		for _, key := range matchedWorkloads.Labels {
 			exposuresByWorkload[key] = append(exposuresByWorkload[key], exposure)
 		}
 	}
@@ -150,6 +160,11 @@ func enrichWorkloadPaths(
 		}
 		if len(rows[i].RiskSignals) != len(rows[j].RiskSignals) {
 			return len(rows[i].RiskSignals) > len(rows[j].RiskSignals)
+		}
+		leftCentral := workloadCentralityByID[rows[i].ID]
+		rightCentral := workloadCentralityByID[rows[j].ID]
+		if leftCentral != rightCentral {
+			return leftCentral
 		}
 		if rows[i].ServiceAccountPower != rows[j].ServiceAccountPower {
 			return rows[i].ServiceAccountPower > rows[j].ServiceAccountPower
@@ -232,6 +247,9 @@ func workloadPathScore(workload model.Workload, serviceAccountPath model.Service
 	if workload.AutomountServiceAccountToken != nil && *workload.AutomountServiceAccountToken {
 		score += 5
 	}
+	if workloadLooksOperationallyCentral(workload) {
+		score += 12
+	}
 	return score
 }
 
@@ -249,6 +267,9 @@ func deriveWorkloadWhyCare(workload model.Workload, serviceAccountPath model.Ser
 	}
 	if len(riskSignals) > 0 {
 		reasons = append(reasons, riskSignals[0])
+	}
+	if workloadLooksOperationallyCentral(workload) {
+		reasons = append(reasons, "looks operationally central")
 	}
 	if len(reasons) > 0 {
 		return fmt.Sprintf("Workload rises because it %s.", strings.Join(reasons, ", "))
