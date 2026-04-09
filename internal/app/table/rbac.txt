@@ -1,4 +1,0 @@
-priority  scope                 subject                           role            binding                            signal                      why_care
-high      cluster-wide          ServiceAccount default/fox-admin  cluster-admin*  harrierops-kube-lab-cluster-admin  admin-like wildcard access  cluster-wide grant stands out because of admin-like wildcard access, cluster-wide scope, used by 1 visible workload, attached to risky workload context.
-medium    namespace/storefront  ServiceAccount storefront/web     edit*           web-edit                           change workloads            namespace/storefront grant stands out because of change workloads, used by 1 visible workload.
-low       namespace/storefront  User analyst@example.com          view*           view-only                          direct                      namespace/storefront grant looks narrower, but it still grounds who is bound to what access.

@@ -182,7 +182,7 @@ func semanticPriority(score int) string {
 
 func enrichGrantWhyCare(grant model.RBACGrant, riskyRelated int, exposedRelated int) string {
 	if grant.EvidenceStatus != "direct" {
-		return fmt.Sprintf("%s binding is visible, but the referenced role rules were unreadable, so keep the grant visible without claiming the full capability story.", grant.Scope)
+		return fmt.Sprintf("%s binding is visible, but the referenced role rules are not visible from current credentials, so keep the grant visible without claiming the full capability story.", grant.Scope)
 	}
 
 	reasons := []string{}
@@ -238,13 +238,6 @@ func derefString(value *string) string {
 		return ""
 	}
 	return *value
-}
-
-func minInt(left int, right int) int {
-	if left < right {
-		return left
-	}
-	return right
 }
 
 func priorityOrder(priority string) int {

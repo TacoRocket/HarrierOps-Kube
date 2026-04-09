@@ -5,8 +5,8 @@ It helps operators and testers understand what Kubernetes identity, workload, RB
 signals they can actually see from the access they already have.
 
 It is being shaped as a sibling project to AzureFox: flat commands, deterministic output
-contracts, artifact emission for every run, and operator-readable output that stays inside the recon
-boundary.
+contracts, optional artifact emission when requested, and operator-readable output that stays inside
+the recon boundary.
 
 ## Quickstart
 
@@ -16,8 +16,8 @@ Download the right binary for your platform from GitHub Releases and extract it.
 harrierops-kube <command> [global options]
 ```
 
-By default, Harrier Ops Kube writes artifacts into your current directory. If you want them
-somewhere else, pass `--outdir`:
+By default, Harrier Ops Kube prints the selected output format to stdout and keeps the working tree
+clean. If you want saved artifacts, pass `--outdir`:
 
 ```bash
 harrierops-kube whoami --output table --outdir ./harrierops-kube-demo
@@ -124,7 +124,7 @@ HARRIEROPS_KUBE_FIXTURE_DIR=testdata/fixtures/lab_cluster \
 - `--output json`
 - `--output csv`
 
-All commands write artifacts under `<outdir>/`:
+When `--outdir` is set, commands write artifacts under `<outdir>/`:
 
 - `loot/<command>.json`
 - `json/<command>.json`

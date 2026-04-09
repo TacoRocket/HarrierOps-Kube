@@ -97,15 +97,20 @@ func enrichServiceAccountPaths(
 	rbacData model.RBACData,
 ) []model.ServiceAccountPath {
 	workloadsByServiceAccount := map[string][]model.Workload{}
+	workloadsByKey := map[string]model.Workload{}
+	workloadsByNamespace := map[string][]model.Workload{}
 	for _, workload := range workloads.WorkloadAssets {
 		key := serviceAccountKey(workload.Namespace, workload.ServiceAccountName)
 		workloadsByServiceAccount[key] = append(workloadsByServiceAccount[key], workload)
+		workloadKey := relatedWorkloadKey(workload.Namespace, workload.Name)
+		workloadsByKey[workloadKey] = workload
+		workloadsByNamespace[workload.Namespace] = append(workloadsByNamespace[workload.Namespace], workload)
 	}
 
 	exposureIDsByWorkload := map[string][]string{}
 	for _, exposure := range exposures.ExposureAssets {
-		for _, rawWorkloadName := range exposure.RelatedWorkloads {
-			workloadKey := relatedWorkloadKey(exposure.Namespace, rawWorkloadName)
+		matchedWorkloads := matchExposureWorkloads(exposure, workloadsByKey, workloadsByNamespace)
+		for _, workloadKey := range matchedWorkloads.Labels {
 			exposureIDsByWorkload[workloadKey] = append(exposureIDsByWorkload[workloadKey], exposure.ID)
 		}
 	}
@@ -195,13 +200,6 @@ func enrichServiceAccountPaths(
 	})
 
 	return paths
-}
-
-func relatedWorkloadKey(namespace string, rawName string) string {
-	if strings.Contains(rawName, "/") {
-		return rawName
-	}
-	return namespace + "/" + rawName
 }
 
 type serviceAccountPowerAssessment struct {
@@ -416,11 +414,4 @@ func countSummary(count int, singular string, plural string) string {
 		return fmt.Sprintf(singular, count)
 	}
 	return fmt.Sprintf(plural, count)
-}
-
-func maxInt(left int, right int) int {
-	if left > right {
-		return left
-	}
-	return right
 }

@@ -72,7 +72,7 @@
       "related_workloads": [
         "build/docker-builder"
       ],
-      "why_care": "Exposure rises because it exposes a broad workload path, backend name is visible but detail is blocked."
+      "why_care": "Exposure rises because it exposes a broad workload path, backend detail is not visible from current credentials."
     },
     {
       "asset_type": "Pod",
@@ -89,7 +89,7 @@
       "related_workloads": [
         "build/ci-runner"
       ],
-      "why_care": "Exposure rises because it exposes a broad workload path, backend name is visible but detail is blocked."
+      "why_care": "Exposure rises because it exposes a broad workload path, backend detail is not visible from current credentials."
     }
   ],
   "findings": [

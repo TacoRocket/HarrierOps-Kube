@@ -324,7 +324,7 @@ func baseGrantWhyCare(bindingKind string, namespace string, roleName string, dan
 	}
 
 	if !roleRulesVisible {
-		return fmt.Sprintf("%s binding is visible, but the referenced role rules were unreadable, so keep the grant in view without overstating what it allows.", scope)
+		return fmt.Sprintf("%s binding is visible, but the referenced role rules are not visible from current credentials, so keep the grant in view without overstating what it allows.", scope)
 	}
 	if len(dangerousRights) > 0 {
 		return fmt.Sprintf("%s grant carries %s, so the binding deserves a closer look.", scope, dangerousRights[0])
