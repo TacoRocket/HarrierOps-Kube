@@ -1,46 +1,101 @@
 # Harrier Ops Kube
 
-Harrier Ops Kube is a Go CLI for offensive-focused Kubernetes recon and chaining.
-It helps operators and testers understand what Kubernetes identity, workload, RBAC, and exposure
-signals they can actually see from the access they already have.
+Harrier Ops Kube is a Go CLI for operator-first Kubernetes recon.
+It helps operators and testers answer the questions that matter fastest:
 
-It is being shaped as a sibling project to AzureFox: flat commands, deterministic output
-contracts, optional artifact emission when requested, and operator-readable output that stays inside
-the recon boundary.
+- what foothold am I really using
+- what looks reachable
+- which workload matters first
+- which identity, secret, or escalation path should I inspect next
 
-## Quickstart
+## Why Harrier Ops Kube
+
+Most Kubernetes tooling is built for cluster administration, object management, or raw inventory.
+
+Harrier Ops Kube is built for operator triage:
+
+- ground the current session before trusting deeper output
+- rank the workload, identity, and exposure paths that actually matter
+- keep output readable enough that the next command is obvious
+
+## Install
 
 Download the right binary for your platform from GitHub Releases and extract it.
 
-```bash
-harrierops-kube <command> [global options]
-```
+## Run It
 
-By default, Harrier Ops Kube prints the selected output format to stdout and keeps the working tree
-clean. If you want saved artifacts, pass `--outdir`:
+Start with the current foothold and the cluster shape:
 
 ```bash
-harrierops-kube whoami --output table --outdir ./harrierops-kube-demo
+harrierops-kube whoami
+harrierops-kube inventory
 ```
+
+Then move into the visible edge and the running things that matter:
+
+```bash
+harrierops-kube exposure
+harrierops-kube workloads
+```
+
+## Example Output
+
+`harrierops-kube service-accounts`
+
+| priority | service account | workloads | power | token posture |
+| --- | --- | --- | --- | --- |
+| `high` | `default/fox-admin` | `default/fox-admin` | `has cluster-wide admin-like access` | `token auto-mount is visible on 1 attached workload; legacy token secret is visible` |
+| `medium` | `storefront/web` | `storefront/web-5d4f6` | `can change workloads` | `visible workloads disable token auto-mount` |
+
+Harrier Ops Kube is not just listing Kubernetes objects.
+It ranks the paths that matter, explains why they matter, and points to the next review surface.
+
+## What Makes This Different
+
+- Foothold-first, not just object-first
+- Focused on attack paths and consequence, not raw cluster data
+- Output designed for operators who need to decide what matters next
 
 ## Currently Supported Commands
 
 | Section | Commands |
 | --- | --- |
 | `core` | `inventory` |
-| `identity` | `whoami`, `rbac`, `service-accounts`, `permissions` |
+| `identity` | `whoami`, `rbac`, `service-accounts`, `permissions`, `privesc` |
 | `workload` | `workloads` |
-| `exposure` | `exposure`, `secrets`, `privesc` |
+| `exposure` | `exposure` |
+| `secrets` | `secrets` |
 
-Later-depth surface, not part of the current runnable Phase 1 core:
+Later depth surface:
 
 - `images`
 
-## Releases
+## Kubernetes Access
 
-Tagged releases publish prebuilt binaries through GitHub Releases.
-Release artifacts include macOS binaries for both Apple Silicon (`darwin-arm64`) and Intel
-(`darwin-amd64`), plus Linux and Windows builds.
+Harrier Ops Kube expects existing Kubernetes access.
+It is not a login manager or a custom auth flow.
+
+The intended operator path is the Kubernetes access you already have:
+
+- the current working `kubectl` context
+- a `kubeconfig` file, usually from `~/.kube/config`
+- `KUBECONFIG` when it points to a different config path
+
+It also assumes the current machine can reach the Kubernetes API it is trying to use.
+If the `kubeconfig` points to a private endpoint, you still need network reachability from the
+current host.
+
+## Current Runtime Note
+
+The current build is fixture-backed while the live `kubectl` collectors are rebuilt.
+If you want repeatable local output today, set `HARRIEROPS_KUBE_FIXTURE_DIR`:
+
+```bash
+HARRIEROPS_KUBE_FIXTURE_DIR=testdata/fixtures/lab_cluster \
+  go run ./cmd/harrierops-kube whoami --output table
+```
+
+The command surface and output contracts match the operator-facing command set above.
 
 ## CLI Invocation
 
@@ -59,58 +114,6 @@ harrierops-kube inventory --context prod-cluster --namespace payments
 harrierops-kube permissions help
 ```
 
-## Kubernetes Access Assumptions
-
-Harrier Ops Kube expects existing Kubernetes access. It is not meant to be a login manager or a
-custom auth flow.
-
-By default, Harrier Ops Kube should use the same cluster access an operator already has, such as:
-
-- the current working `kubectl` context
-- a `kubeconfig` file, usually from `~/.kube/config`
-- `KUBECONFIG` when it points to a different config path
-- later, a direct service-account-token mode when that foothold is added explicitly
-
-Plain-language shortcut:
-
-- AzureFox starts from cloud credentials
-- Harrier Ops Kube starts from Kubernetes credentials
-
-That means a realistic workstation or operator path may include:
-
-- a locally stored `kubeconfig`
-- a cloud-backed `kubeconfig` that can refresh cluster access through an existing cloud session
-- a shell where `kubectl` already works and Harrier Ops Kube can reuse that active context
-
-Harrier Ops Kube also assumes the current machine can actually reach the Kubernetes API it is trying
-to use.
-
-- if the `kubeconfig` points to a private or internal address, the operator still needs network
-  reachability from the current host
-- Harrier Ops Kube can use the credentials and context it is given, but it cannot solve off-network
-  access by itself
-
-Current limitation:
-
-- Harrier Ops Kube is `kubectl`-first right now
-- it reuses the Kubernetes access and visibility the current `kubectl` session already has
-- it is not using a separate native Kubernetes API collector yet
-
-If the current session cannot read much, Harrier Ops Kube should say the view is partial or blocked
-instead of pretending the cluster is quiet.
-
-## Data Sources
-
-Harrier Ops Kube is `kubectl`-first right now.
-For repeatable development and testing, set `HARRIEROPS_KUBE_FIXTURE_DIR` to use local JSON
-fixtures. The current implementation is fixture-backed while the live `kubectl` collectors are
-rebuilt.
-
-```bash
-HARRIEROPS_KUBE_FIXTURE_DIR=testdata/fixtures/lab_cluster \
-  go run ./cmd/harrierops-kube inventory --output json
-```
-
 ## Output Modes
 
 - `--output table` (default)
@@ -124,19 +127,6 @@ When `--outdir` is set, commands write artifacts under `<outdir>/`:
 - `table/<command>.txt`
 - `csv/<command>.csv`
 
-Artifact intent:
-
-- `json/` is the full structured command record.
-- `loot/` is the smaller high-value handoff for quick operator follow-up.
-- `table/` and `csv/` are convenience views rendered from the same underlying command result.
-
-## Sections
-
-- `identity`: `whoami`, `rbac`, `service-accounts`, `permissions`
-- `core`: `inventory`
-- `workload`: `workloads`
-- `exposure`: `exposure`, `secrets`, `privesc`
-
 ## Development
 
 ```bash
@@ -144,20 +134,3 @@ gofmt -w ./cmd ./internal
 go test ./...
 bash scripts/setup_local_guardrails.sh
 ```
-
-## GitHub Guardrails
-
-The repo now mirrors the AzureFox-style lightweight publish guardrails:
-
-- local pre-push hook for branch naming, direct `main` push blocking, formatting checks, tests, and optional `gitleaks`
-- CI checks for PR metadata policy, `gitleaks`, formatting, and `go test ./...`
-- Dependabot for GitHub Actions and Go modules
-- PR template plus contributor and security guidance
-
-## Roadmap
-
-The current Phase 1 direction is Kubernetes-first:
-
-- `whoami`, `inventory`, `rbac`, `service-accounts`, `permissions`, `workloads`, `exposure`, `secrets`, and `privesc` are the current runnable Phase 1 core
-- `images` stays demoted to a later depth surface unless implementation proves it should move up
-- output should stay plain-language, operator-readable, and inside the recon boundary
