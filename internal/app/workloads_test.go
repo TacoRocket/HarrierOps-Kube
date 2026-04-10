@@ -140,7 +140,6 @@ func TestWorkloadEnrichmentPrioritizesExposureIdentityAndExecution(t *testing.T)
 		"service account",
 		"mounted config refs",
 		"sidecars",
-		"replicas",
 	}) {
 		t.Fatalf("edge/frontdoor VisiblePatchSurfaces = %#v, want ordered patch surfaces", got)
 	}

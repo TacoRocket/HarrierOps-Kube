@@ -233,9 +233,6 @@ func visibleWorkloadPatchSurfaces(workload model.Workload) []string {
 	if len(workload.Sidecars) > 0 {
 		surfaces = append(surfaces, "sidecars")
 	}
-	if workload.Replicas != nil {
-		surfaces = append(surfaces, "replicas")
-	}
 	return surfaces
 }
 

@@ -104,3 +104,40 @@ func TestBuildWorkloadIdentityPivotOutputBuildsExecRowWhenCurrentFootholdCanReac
 		t.Fatalf("SubversionPoint = %q", row.SubversionPoint)
 	}
 }
+
+func TestBuildWorkloadIdentityPivotOutputSuppressesNonNamespacePermissionScopes(t *testing.T) {
+	output, err := BuildWorkloadIdentityPivotOutput(contracts.Metadata{Command: "chains"}, WorkloadIdentityPivotInputs{
+		StartingFoothold: "fox-operator (current foothold)",
+		Workloads: []model.WorkloadPath{
+			{
+				ID:                 "pod:storefront:web-5d4f6",
+				Name:               "web-5d4f6",
+				Namespace:          "storefront",
+				ServiceAccountName: "web",
+				Priority:           "high",
+				PublicExposure:     true,
+			},
+		},
+		ServiceAccounts: []model.ServiceAccountPath{
+			{
+				ID:           "serviceaccount:storefront:web",
+				Name:         "web",
+				Namespace:    "storefront",
+				PowerSummary: "can change workloads",
+			},
+		},
+		Permissions: []model.PermissionPath{
+			{
+				ID:            "current-session:cluster-wide:can-exec-into-pods",
+				Scope:         "cluster-wide",
+				ActionSummary: "can exec into pods",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildWorkloadIdentityPivotOutput() error = %v", err)
+	}
+	if len(output.Paths) != 0 {
+		t.Fatalf("len(Paths) = %d, want 0 for non-namespace scope", len(output.Paths))
+	}
+}

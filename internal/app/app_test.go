@@ -570,6 +570,105 @@ func TestChainsTableOutputStaysOperatorReadable(t *testing.T) {
 	}
 }
 
+func TestBuildSelectedChainPayloadKeepsRunnableRowsWhenExposureSupportReadFails(t *testing.T) {
+	namespace := "app"
+	payload, err := buildSelectedChainPayload(stubInventoryProvider{
+		metadataContext: model.MetadataContext{
+			ContextName: "lab-cluster",
+			ClusterName: "lab-cluster",
+			Namespace:   namespace,
+		},
+		whoamiData: model.WhoAmIData{
+			CurrentIdentity: model.CurrentIdentity{
+				Label:      "fox-operator",
+				Kind:       "User",
+				Confidence: "direct",
+			},
+		},
+		workloadsData: model.WorkloadsData{
+			WorkloadAssets: []model.Workload{
+				{
+					ID:                 "pod:app:web",
+					Name:               "web",
+					Namespace:          namespace,
+					Kind:               "Pod",
+					ServiceAccountName: "web",
+					Images:             []string{"nginx"},
+				},
+			},
+		},
+		serviceAccountsData: model.ServiceAccountsData{
+			ServiceAccounts: []model.ServiceAccount{
+				{
+					ID:        "serviceaccount:app:web",
+					Name:      "web",
+					Namespace: namespace,
+				},
+			},
+		},
+		rbacData: model.RBACData{
+			RoleGrants: []model.RBACGrant{
+				{
+					ID:             "grant:user:exec",
+					BindingName:    "user-exec",
+					Scope:          "namespace/app",
+					SubjectKind:    "User",
+					SubjectName:    "fox-operator",
+					EvidenceStatus: "direct",
+					WorkloadActions: []model.WorkloadAction{
+						{
+							Verb:            "exec",
+							TargetGroup:     "pods",
+							TargetResources: []string{"pods/exec"},
+							Summary:         "can exec into pods",
+						},
+					},
+				},
+				{
+					ID:               "grant:sa:secret-read",
+					BindingName:      "web-secret-read",
+					Scope:            "namespace/app",
+					SubjectKind:      "ServiceAccount",
+					SubjectName:      "web",
+					SubjectNamespace: &namespace,
+					EvidenceStatus:   "direct",
+					DangerousRights:  []string{"read secrets"},
+				},
+			},
+		},
+		exposuresErr: errors.New("forbidden"),
+	}, provider.QueryOptions{}, "workload-identity-pivot")
+	if err != nil {
+		t.Fatalf("buildSelectedChainPayload() error = %v", err)
+	}
+
+	if payload["family"] != "workload-identity-pivot" {
+		t.Fatalf("family = %v, want workload-identity-pivot", payload["family"])
+	}
+
+	paths, ok := payload["paths"].([]any)
+	if !ok || len(paths) == 0 {
+		t.Fatalf("paths = %#v, want non-empty []any", payload["paths"])
+	}
+
+	issues, ok := payload["issues"].([]any)
+	if !ok || len(issues) == 0 {
+		t.Fatalf("issues = %#v, want support-read issue", payload["issues"])
+	}
+
+	foundExposureIssue := false
+	for _, issue := range issues {
+		scope, _ := requireMap(t, issue)["scope"].(string)
+		if scope == "chains.exposure" {
+			foundExposureIssue = true
+			break
+		}
+	}
+	if !foundExposureIssue {
+		t.Fatalf("issues = %#v, want chains.exposure issue", issues)
+	}
+}
+
 func TestWhoAmIPayloadIdentityCases(t *testing.T) {
 	testCases := []struct {
 		name                string

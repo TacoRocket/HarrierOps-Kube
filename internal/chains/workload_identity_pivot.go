@@ -15,7 +15,6 @@ type WorkloadIdentityPivotInputs struct {
 	ServiceAccounts  []model.ServiceAccountPath
 	Permissions      []model.PermissionPath
 	Secrets          []model.SecretPath
-	Privesc          []model.PrivescPath
 	Issues           []model.Issue
 }
 
@@ -61,7 +60,7 @@ func BuildWorkloadIdentityPivotOutput(metadata contracts.Metadata, inputs Worklo
 		CommandState:       commandState,
 		Summary:            summary,
 		ClaimBoundary:      spec.AllowedClaim,
-		BackingCommands:    []string{"workloads", "service-accounts", "permissions", "privesc", "secrets"},
+		BackingCommands:    []string{"workloads", "service-accounts", "permissions", "secrets"},
 		Paths:              rows,
 		Issues:             inputs.Issues,
 	}, nil
@@ -99,7 +98,10 @@ func buildExecIntoPodsRows(
 			continue
 		}
 
-		namespace := namespaceFromScope(permission.Scope)
+		namespace, ok := namespaceScope(permission.Scope)
+		if !ok {
+			continue
+		}
 		workload, ok := strongestWorkloadForScope(namespace, workloadByNamespace, serviceAccountByKey)
 		if !ok {
 			continue
@@ -164,7 +166,10 @@ func buildReadSecretsRows(
 			continue
 		}
 
-		namespace := namespaceFromScope(permission.Scope)
+		namespace, ok := namespaceScope(permission.Scope)
+		if !ok {
+			continue
+		}
 		secretPath, workload, serviceAccount, ok := strongestSecretPathForScope(namespace, inputs.Secrets, workloadByLabel, serviceAccountByKey)
 		if !ok {
 			continue
@@ -439,10 +444,11 @@ func chainPathTypeRank(pathType string) int {
 	}
 }
 
-func namespaceFromScope(scope string) string {
+func namespaceScope(scope string) (string, bool) {
 	const prefix = "namespace/"
 	if strings.HasPrefix(scope, prefix) {
-		return strings.TrimPrefix(scope, prefix)
+		namespace := strings.TrimPrefix(scope, prefix)
+		return namespace, namespace != ""
 	}
-	return ""
+	return "", false
 }
