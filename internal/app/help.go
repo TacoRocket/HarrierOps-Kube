@@ -63,8 +63,8 @@ var commandHelpTopics = map[string]commandHelpTopic{
 		SecurityValue:     "This is where workload, service-account, permission, secret, and escalation evidence becomes one bounded path story instead of five separate triage views.",
 		WhyCare:           chains.GroupedOverviewWhyCare(),
 		OutputHighlights:  chains.GroupedOverviewOutputHighlights(),
-		Notes:   chains.WorkloadIdentityPivotHelpNotes(),
-		Example: "harrierops-kube chains workload-identity-pivot --output table",
+		Notes:             chains.WorkloadIdentityPivotHelpNotes(),
+		Example:           "harrierops-kube chains workload-identity-pivot --output table",
 	},
 	"inventory": {
 		Name:              "inventory",
